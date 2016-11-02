@@ -1,0 +1,46 @@
+#! /bin/bash -ue
+
+##########
+# ready? #
+##########
+MEAN=$(dirname $(readlink -f $BASH_SOURCE))
+TPL="$MEAN"/templates
+. "$MEAN"/helpers
+
+init() {
+    local project_name=$1
+
+    [[ -d "$project_name" ]] && {
+        echo "$project_name already exists; exiting." >&2
+        return 1
+    }
+    
+    mkdir -v "$project_name"
+    pushd "$_"
+    npm init -y                 # creates a default package.json
+
+    cp -v "$TPL"/Gruntfile.js . # basic grunt file
+
+    mkdir -v server                # where server side code lives
+    pushd "$_" && {
+        mkdir -v public routes
+        cp -v "$TPL"/server-app.js app.js # skeleton server app
+        pushd public && mkdir -v assets vendor views && {
+                pushd views && {
+                    cp -v "$TPL"/server-public-views-index.html index.html
+                } && popd
+            } && popd
+        pushd routes && {
+            cp -v "$TPL"/server-routes-index.js index.js
+        } && popd
+    } && popd
+    mkdir -v client             # where client side code live and gets
+                                # compiled into the server folder.
+    pushd client && {
+        touch app.js
+    } && popd
+    
+    npm install --save \
+        mongoose express angular path body-parser \
+        grunt grunt-contrib-copy grunt-contrib-uglify
+}
